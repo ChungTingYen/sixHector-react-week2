@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef,useMemo } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import axios from "axios";
 import * as apiService from "./apiService/apiService";
 import { Products, ProductDetail, Modal } from "./component";
@@ -17,23 +17,23 @@ function App() {
   const AppModalRef = useRef(null);
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
   const [isLoggin, setIsLoggin] = useState(false);
-  const [search,setSearch] = useState('');
-  const [priceAscending,setPriceAscending] = useState(false);
-  const [axiosConfig,setAxiosConfig] = useState({
-    params: { page: 0 }, 
-    headers: { Authorization: '', },
+  const [search, setSearch] = useState("");
+  const [priceAscending, setPriceAscending] = useState(false);
+  const [axiosConfig, setAxiosConfig] = useState({
+    params: { page: 0 },
+    headers: { Authorization: "" },
   });
-  const [pages,setPages] = useState({
-    currentPage:0,
-    totalPages:0,
-    category:''
+  const [pages, setPages] = useState({
+    currentPage: 0,
+    totalPages: 0,
+    category: "",
   });
-  const filterData = useMemo(()=>{
+  const filterData = useMemo(() => {
     return [...productData]
-      .filter((item)=>item.title.match(search))
-      .sort((a,b)=>a.title.localeCompare(b.title))
-      .sort((a,b)=>priceAscending && (a.price - b.price));
-  },[productData,search,priceAscending]);
+      .filter((item) => item.title.match(search))
+      .sort((a, b) => a.title.localeCompare(b.title))
+      .sort((a, b) => priceAscending && a.price - b.price);
+  }, [productData, search, priceAscending]);
 
   const changeInput = (e) => {
     setAccount({
@@ -51,11 +51,9 @@ function App() {
         const { token, expired } = res.data;
         document.cookie = `hexToken=${token}; expires=${new Date(expired)}`;
         //執行axios.defaults.headers.common.Authorization
-        axios.defaults.headers.common.Authorization = token;
+        // axios.defaults.headers.common.Authorization = token;
         setIsLoggin(true);
-        // const config = {};
         await utils.getProductData(token, null, setProductData);
-        // initRef.current = true;
       }
     } catch (error) {
       alert(error.response.data.message);
@@ -65,15 +63,14 @@ function App() {
   //檢查登入狀態
   const handleCheckLogin = async () => {
     try {
-      // const headers = getHeadersFromCookie();
-      // const res = await apiService.axiosPostCheckSingin(
-      //   "/api/user/check",
-      //   headers
-      // );
-      //調用common.Authorization
-      // const res = await axios.post("https://ec-course-api.hexschool.io" + "/api/user/check",{});
-      const res = await apiService.axiosPostCheckSingin2("/api/user/check");
+      modalStatus(AppModalRef, "確認中", null, false);
+      const headers = utils.getHeadersFromCookie();
+      const res = await apiService.axiosPostCheckSingin(
+        "/api/user/check",
+        headers
+      );
       alert(res.data.success ? "已登入成功" : "請重新登入");
+      AppModalRef.current.close();
     } catch (error) {
       alert(error.response.data.message);
       console.log(error);
@@ -138,25 +135,26 @@ function App() {
         setSelectedRowIndex(null);
       }
     } catch (error) {
-      alert('error:' + error.response.data.message);
+      alert("error:" + error.response.data.message);
       console.log(error);
     }
   };
   //重新取得產品資料
   const handleGetProducts = async () => {
-    modalStatus(AppModalRef, "載入中", null, false);
     setSelectedRowIndex("");
+    modalStatus(AppModalRef, "載入中", null, false);
     try {
       const headers = utils.getHeadersFromCookie();
-      const res = await apiService.axiosGetProductData(
-        `/api/${APIPath}/admin/products`,
-        headers
-      ) || [];
+      const res =
+        (await apiService.axiosGetProductData(
+          `/api/${APIPath}/admin/productss`,
+          headers
+        )) || [];
       console.log(res.data.pagination);
-      setPages({ 
-        currentPage:res.data.pagination.current_page, 
-        totalPages:res.data.pagination.total_pages ,
-        content:res.data.pagination.category
+      setPages({
+        currentPage: res.data.pagination.current_page,
+        totalPages: res.data.pagination.total_pages,
+        content: res.data.pagination.category,
       });
       await utils.getProductData(null, headers, setProductData);
       // alert("已重新取得商品資料");
@@ -164,35 +162,41 @@ function App() {
     } catch (error) {
       alert(error.response.data.message);
       console.log(error);
+    } finally {
+      // (() => {
+      //   setTimeout(() => {
+      //     AppModalRef.current.close();
+      //   }, 300);
+      // })();
+      console.log("finally");
       AppModalRef.current.close();
     }
+    // AppModalRef.current.close();
   };
   //下一頁資料
-  const handleGetNextPageProducts = async()=>{
+  const handleGetNextPageProducts = async () => {
     const headers = utils.getHeadersFromCookie();
-    const  updatedConfig = 
-   { 
-     ...axiosConfig, 
-     params: 
-      { 
-        ...axiosConfig.params, 
-        page: 2, 
-        category:''
-      }, 
-     headers: headers, // 替換 headers 
-   };
-    console.log('config=',updatedConfig);
+    const updatedConfig = {
+      ...axiosConfig,
+      params: {
+        ...axiosConfig.params,
+        page: 2,
+        category: "",
+      },
+      headers: headers, // 替換 headers
+    };
+    // console.log("config=", updatedConfig);
     try {
-      const res = await apiService.axiosGetProductData2(
-        `/api/${APIPath}/admin/products`,
-        updatedConfig
-      ) || [];
+      const res =
+        (await apiService.axiosGetProductData2(
+          `/api/${APIPath}/admin/products`,
+          updatedConfig
+        )) || [];
       setProductData(res.data.products);
       console.log(res.data);
     } catch (error) {
       console.error(error);
     }
-
   };
   const onGetProduct = useCallback(
     (productId) => {
@@ -248,9 +252,8 @@ function App() {
       AppModalRef.current.close();
       console.log("useEffect AppModalRef.current.close();");
     }
-    // console.log("tempProduct=", tempProduct?.id);
   }, [productData]);
-  useEffect(()=>{
+  useEffect(() => {
     // console.log('pages=',pages);
   });
   // });
@@ -330,15 +333,21 @@ function App() {
             </div>
             <div className="d-flex align-items-center mt-3">
               <div className="me-3">
-                      搜尋名稱:<input type="search" style={{ width: "100px" }} onChange={(e)=>{
-                  setSearch(e.target.value);
-                }}/>
+                搜尋名稱:
+                <input
+                  type="search"
+                  style={{ width: "100px" }}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                  }}
+                />
               </div>
               <div className="me-3">
-                      價格排序:
-                <input type="checkbox" 
+                價格排序:
+                <input
+                  type="checkbox"
                   checked={priceAscending}
-                  onChange={(e)=>setPriceAscending(e.target.checked)}
+                  onChange={(e) => setPriceAscending(e.target.checked)}
                 />
                 {priceAscending.toString()}
               </div>
